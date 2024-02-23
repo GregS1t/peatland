@@ -1,0 +1,8 @@
+# .Gitignore file 
+
+.DS_Store
+Icon*
+.ipynb_checkpoints/
+.dropbox
+__pycache__
+
