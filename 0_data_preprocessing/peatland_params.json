@@ -1,0 +1,9 @@
+{"PEATMAP": "/home/gsainton/CALER/PEATMAP/0_data_preprocessing/2_PEATMAP_DP/PEATMAP_raw", 
+ "PEATMAP_WD": "/home/gsainton/CALER/PEATMAP/0_data_preprocessing/2_PEATMAP_DP/PEATMAP_welldone",
+ "LS8": "/home/gsainton/CALER/PEATMAP/0_data_preprocessing/1_GEE_DP/LS8_raw",
+ "LS8_WD": "/home/gsainton/CALER/PEATMAP/0_data_preprocessing/1_GEE_DP/LS8_welldone",
+ "MERIT": "/home/gsainton/CALER/PEATMAP/0_data_preprocessing/3_MERIT_DP/", 
+ "MERIT_WD": "/home/gsainton/CALER/PEATMAP/0_data_preprocessing/3_MERIT_DP/MERIT_welldone",
+ "WTD": "/home/gsainton/CALER/PEATMAP/0_data_preprocessing/4_WTD_DP",
+ "WTD_WD": "/home/gsainton/CALER/PEATMAP/0_data_preprocessing/4_WTD_DP/WTD_welldone"
+}
