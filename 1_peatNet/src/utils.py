@@ -19,7 +19,7 @@ from sklearn.preprocessing import MinMaxScaler
 class PeatNetDataProc:
     def __init__(self, data_dir, frac_samples=0.3, seed=42):
         self.data_dir = data_dir
-        self.frac_samples = frac_samples
+        self.frac_samples = min(1, frac_samples)
         self.seed = seed
 
     def make_subset_data(self, datafile):
@@ -53,6 +53,7 @@ class PeatNetDataProc:
 
     def load_dataset_mat(self, datafile):
         file_path = os.path.join(self.data_dir, datafile)
+
         with h5py.File(file_path, 'r') as f:
             input_data = np.array(f.get('input')).astype(np.float32).T
             target_data = np.array(f.get('target')).astype(np.float32).T
@@ -77,9 +78,16 @@ class PeatNetDataProc:
 
     def load_data(self, nb_file2merge):
         list_files = self.get_files()
-        list_files_selected = np.random.choice(list_files, nb_file2merge, replace=False)
-        X, y = self.stack_data(list_files_selected)
-        return pd.DataFrame(X), pd.DataFrame(y)
+
+        if nb_file2merge > len(list_files) or nb_file2merge < 1:
+            nb_file2merge = len(list_files)
+
+        if len(list_files) == 0:
+            raise ValueError("No data file found in the data directory")
+        else:
+            list_files_selected = np.random.choice(list_files, nb_file2merge, replace=False)
+            X, y = self.stack_data(list_files_selected)
+            return pd.DataFrame(X), pd.DataFrame(y)
 
     def normalize_data(self, X: pd.DataFrame, fields_to_transform: list) -> pd.DataFrame:
         X_boxcox = self.box_cox_transform(X.copy(), fields_to_transform)

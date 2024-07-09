@@ -1,7 +1,7 @@
 import os
 import datetime
 import logging
-
+import argparse
 
 from scipy.stats import boxcox
 
@@ -21,7 +21,7 @@ from libCarbonFootprint import *
 
 
 # --------------------------------------------------------------------------
-# Define the parameters
+# Define default parameters
 
 
 
@@ -61,6 +61,23 @@ def setup_device() -> torch.device:
     return device
 
 if __name__ == '__main__':
+
+    # Get argument from the command line
+    parser = argparse.ArgumentParser(description='Train a neural network to predict peatland')
+    parser.add_argument('--num_epochs', type=int, default=2, help='Number of epochs')
+    parser.add_argument('--nb_file2merge', type=int, default=2, help='Number of files to merge')
+    parser.add_argument('--frac_samples', type=float, default=0.10, help='Fraction of the data to extract')
+    args = parser.parse_args()
+
+    num_epochs = args.num_epochs
+    nb_file2merge = args.nb_file2merge
+    frac_samples = args.frac_samples
+
+    if frac_samples > 1 or frac_samples < 0:
+        raise ValueError("frac_samples must be between 0 and 1")
+    
+    # Exemple of command line:
+    # python exec_peatnet.py --num_epochs 2 --nb_file2merge 2 --frac_samples 0.10
 
     if carbon_estimation:
         start = datetime.datetime.now()
@@ -171,4 +188,3 @@ if __name__ == '__main__':
         carbon_logger.log_carbon_footprint(end, total_energy_kwh, total_carbon_footprint)
         
     logger.info("End of the script")
-
