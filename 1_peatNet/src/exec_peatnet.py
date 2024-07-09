@@ -36,7 +36,7 @@ verbose = True              # Verbose mode
 
 model_dir = "../peatnet_models"
 
-carbon_log_dir = "~/CARBON_LOG"
+
 carbon_estimation = True    # Estimate the carbon footprint
 carbon_log_file = "carbon_footprint.log"
 training_log_file = "peatnet_training"
@@ -79,9 +79,11 @@ if __name__ == '__main__':
     # Exemple of command line:
     # python exec_peatnet.py --num_epochs 2 --nb_file2merge 2 --frac_samples 0.10
 
+
     if carbon_estimation:
         start = datetime.datetime.now()
     if not os.path.exists(carbon_log_dir):
+        carbon_log_dir = "home/gsainton/CARBON_LOG" if os.uname().nodename == 'ares6' else "/obs/gsainton/PEATLAND_DATA"
         os.makedirs(carbon_log_dir)
 
     device = setup_device()
