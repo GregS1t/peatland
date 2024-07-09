@@ -1,0 +1,10 @@
+# .Gitignore file 
+
+.DS_Store
+Icon*
+.ipynb_checkpoints/
+.dropbox
+__pycache__
+*.log
+1_peatNet/runs/mlp_experiment/*
+

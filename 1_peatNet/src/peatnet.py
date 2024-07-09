@@ -1,4 +1,6 @@
 
+import os
+
 import time
 
 import torch
@@ -28,15 +30,17 @@ class PeatNet(nn.Module):
         self.relu = nn.ReLU()
         self.fc2 = nn.Linear(32, 16)
         self.fc3 = nn.Linear(16, output_size)
+        self.dropout = nn.Dropout(p=0.5)
 
     def forward(self, x):
         out = self.fc1(x)
         out = self.relu(out)
+        #out = self.dropout(out)
         out = self.fc2(out)
         out = self.relu(out)
+        #out = self.dropout(out)
         out = self.fc3(out)
         return out
-    
 
 def train_model(model, train_dataloader, val_dataloader, criterion, optimizer, 
                 num_epochs=10, device='cpu', scheduler=None):
@@ -126,3 +130,9 @@ def train_model(model, train_dataloader, val_dataloader, criterion, optimizer,
         'val_mae_scores': val_mae_scores
     }
 
+def save_model(model: nn.Module, model_dir: str, current_time: str):
+    if not os.path.exists(model_dir):
+        os.makedirs(model_dir)
+    fullname_model = os.path.join(model_dir, f"model_peatnet_{current_time}.ckpt")
+    torch.save(model.state_dict(), fullname_model)
+    return fullname_model
