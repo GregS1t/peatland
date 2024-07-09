@@ -3,7 +3,6 @@ import datetime
 import torch
 import sys
 import pynvml
-import psutil
 
 
 
