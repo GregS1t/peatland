@@ -98,12 +98,12 @@ def setup_device(mydevice: str) -> torch.device:
         # Check if the selected GPU is free
         if mydevice in valid_devices:
             gpu_id = int(mydevice.split(':')[1])
-            if is_gpu_free(gpu_id):
-                logger.info(f"Using GPU - {mydevice}")
-                device = torch.device(mydevice)
-            else:
-                logger.error(f"GPU {mydevice} is currently in use. Exiting...")
-                sys.exit(1)
+            #if is_gpu_free(gpu_id):
+            logger.info(f"Using GPU - {mydevice}")
+            device = torch.device(mydevice)
+            #else:
+            #    logger.error(f"GPU {mydevice} is currently in use. Exiting...")
+            #    sys.exit(1)
         else:
             logger.error(f"Invalid GPU reference: {mydevice}. Valid references: {valid_devices}. Exiting...")
             sys.exit(1)
@@ -125,7 +125,7 @@ if __name__ == '__main__':
     num_epochs = args.num_epochs
     nb_file2merge = args.nb_file2merge
     frac_samples = args.frac_samples
-    mydevice = torch.device(args.gpu_ref)
+    mydevice = args.gpu_ref
 
     if frac_samples > 1 or frac_samples < 0:
         raise ValueError("frac_samples must be between 0 and 1")
