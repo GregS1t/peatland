@@ -12,6 +12,7 @@ import os
 import datetime
 import logging
 import argparse
+import subprocess
 
 from scipy.stats import boxcox
 
@@ -64,35 +65,49 @@ else:
     logger.setLevel(logging.INFO)
 
 
-def setup_device(mydevice:str) -> torch.device:
+def get_gpu_usage():
+    try:
+        result = subprocess.run(['nvidia-smi'], stdout=subprocess.PIPE, stderr=subprocess.PIPE, text=True)
+        return result.stdout
+    except Exception as e:
+        logger.error(f"Failed to execute nvidia-smi: {e}")
+        sys.exit(1)
 
+def is_gpu_free(gpu_id):
+    gpu_usage = get_gpu_usage()
+    logger.info(f"GPU usage:\n{gpu_usage}")
+    # Check for the presence of any process using the specified GPU
+    if f' No running processes found' in gpu_usage.split('GPU')[gpu_id + 1]:
+        return True
+    return False
+
+def setup_device(mydevice: str) -> torch.device:
     if not torch.cuda.is_available():
         logger.error("GPU is not available -> device = 'cpu'...")
         device = torch.device('cpu')
     else:
-        logger.info("GPU found...")
         num_gpus = torch.cuda.device_count()
+        logger.info("GPU found...")
+        logger.info(f"Number of GPUs: {num_gpus}")
         for i in range(num_gpus):
             logger.info(f"Device {i} name: {torch.cuda.get_device_name(i)}")
         
         valid_devices = [f'cuda:{i}' for i in range(num_gpus)]
         logger.info(f"Valid GPU references: {valid_devices}")
-        
-        if torch.cuda.device_count() > 1:
-            # Check the string format of mydevice
-            if mydevice in [f'cuda:{i}' for i in range(torch.cuda.device_count())]:
+
+        # Check if the selected GPU is free
+        if mydevice in valid_devices:
+            gpu_id = int(mydevice.split(':')[1])
+            if is_gpu_free(gpu_id):
                 logger.info(f"Using GPU - {mydevice}")
                 device = torch.device(mydevice)
             else:
-                logger.error(f"Invalid GPU reference: {mydevice}. Exiting...")
+                logger.error(f"GPU {mydevice} is currently in use. Exiting...")
                 sys.exit(1)
         else:
-            if mydevice != 'cuda:0':
-                logger.error(f"Invalid GPU reference: {mydevice}. Exiting...")
-                sys.exit(1)
-            else:
-                logger.info("Using a single GPU : cuda:0")
-                device = torch.device('cuda:0')
+            logger.error(f"Invalid GPU reference: {mydevice}. Valid references: {valid_devices}. Exiting...")
+            sys.exit(1)
+    
     return device
 
 
