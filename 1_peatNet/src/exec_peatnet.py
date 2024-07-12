@@ -1,3 +1,13 @@
+
+#!/usr/bin/env python3
+# -*- coding: utf-8 -*-
+# 
+# Author : Grégory Sainton
+# Date : 2024-06-20
+# Description : Train a neural network to predict peatland
+# 
+
+
 import os
 import datetime
 import logging
@@ -15,21 +25,17 @@ import torch.optim.lr_scheduler as lr_scheduler
 
 from sklearn.model_selection import train_test_split
 
+# Internal modules
 from peatnet import *
 from utils import *
 from libCarbonFootprint import *
 
 
 # --------------------------------------------------------------------------
-# Define default parameters
-
-
-
+# Parameters
 learn_rate = 0.001          # Learning rate
-hidden_size = 64            # Number of neurons in the hidden layers  
-num_epochs = 2              # Number of epochs
-HL = 2                      # Number of hidden layers
-nb_file2merge = 2           # Number of files to merge
+num_epochs = 5              # Number of epochs
+nb_file2merge = 5           # Number of files to merge
 frac_samples = 0.10         # Fraction of the data to extract
 normalize = False            # Normalize the data
 verbose = True              # Verbose mode
@@ -40,6 +46,8 @@ model_dir = "../peatnet_models"
 carbon_estimation = True    # Estimate the carbon footprint
 carbon_log_file = "carbon_footprint.log"
 training_log_file = "peatnet_training"
+
+data_dir = "/home/gsainton/CALER/PEATMAP/1_NN_training/training_data" if os.uname().nodename == 'ares6' else "/data/gsainton/PEATLAND_DATA"
 # --------------------------------------------------------------------------
 
 logging.basicConfig(level=logging.INFO, 
@@ -79,20 +87,24 @@ if __name__ == '__main__':
     # Exemple of command line:
     # python exec_peatnet.py --num_epochs 2 --nb_file2merge 2 --frac_samples 0.10
 
+    carbon_log_dir = "/home/gsainton/CARBON_LOG" if os.uname().nodename == 'ares6' else "/obs/gsainton/PEATLAND_DATA"
 
     if carbon_estimation:
         start = datetime.datetime.now()
     if not os.path.exists(carbon_log_dir):
-        carbon_log_dir = "home/gsainton/CARBON_LOG" if os.uname().nodename == 'ares6' else "/obs/gsainton/PEATLAND_DATA"
+        
         os.makedirs(carbon_log_dir)
 
     device = setup_device()
 
-    data_dir = "/home/gsainton/CALER/PEATMAP/1_NN_training/training_data" if os.uname().nodename == 'ares6' else "/data/gsainton/PEATLAND_DATA"
     
-    peatmat_data_proc = PeatNetDataProc(data_dir=data_dir, frac_samples=frac_samples, seed=42)
 
-    X, y = peatmat_data_proc.load_data(nb_file2merge)
+    peatmat_data_proc = PeatNetDataProc(data_dir=data_dir, frac_samples=frac_samples)
+
+    peatmat_data_proc.set_list_rdn_files(nb_file2merge)
+    sub_sampled_data = peatmat_data_proc.get_list_rdn_files()
+   
+    X, y = peatmat_data_proc.load_data()
     logging.info("Number of tiles to merge : {}".format(nb_file2merge))
     logging.info("Fraction of samples to extract : {}".format(frac_samples))
 
@@ -101,6 +113,8 @@ if __name__ == '__main__':
         'elevation', 'wtd', 'landsat_1', 'landsat_2',
         'landsat_3', 'landsat_4', 'landsat_5', 'landsat_6',
         'landsat_7', 'NDVI']
+    # Après reflexion, j'ai enlevé les deux colonnes latS et lonS qui de mon point de vue ne doivent
+    # pas être utilisées pour la prédiction de la présence de tourbière
 
     X.columns = X_fields    
     y_fields = ['peatland']
@@ -119,9 +133,9 @@ if __name__ == '__main__':
     X_val, X_test, y_val, y_test = train_test_split(X_test, y_test, test_size=0.5, random_state=42)
 
     logger.info("Data splitted into train, validation and test datasets")
-    logger.info(f"\t - Train dataset size: {len(X_train)}")
-    logger.info(f"\t - Validation dataset size: {len(X_val)}")
-    logger.info(f"\t - Test dataset size: {len(X_test)}")
+    logger.info(f"Train dataset size: {len(X_train)}")
+    logger.info(f"Validation dataset size:sub_sampled_data =  {len(X_val)}")
+    logger.info(f"Test dataset size: {len(X_test)}")
 
     # Define model parameters
     input_size = list(X_train.shape)[1]
@@ -150,7 +164,7 @@ if __name__ == '__main__':
     del X_train_tensor, y_train_tensor, X_val_tensor, y_val_tensor, X_test_tensor, y_test_tensor
 
     # Define the model
-    model = PeatNet(input_size, hidden_size, output_size).to(device)
+    model = PeatNet(input_size, output_size).to(device)
 
     logger.info(f"Number of parameters: {sum(p.numel() for p in model.parameters())}")
     logger.debug(model)

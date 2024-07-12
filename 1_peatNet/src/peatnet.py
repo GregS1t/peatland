@@ -24,7 +24,7 @@ class PeatNet(nn.Module):
     The activation function is ReLU.
     '''
 
-    def __init__(self, input_size, hidden_size, output_size):
+    def __init__(self, input_size, output_size):
         super(PeatNet, self).__init__()
         self.fc1 = nn.Linear(input_size, 32)
         self.relu = nn.ReLU()
