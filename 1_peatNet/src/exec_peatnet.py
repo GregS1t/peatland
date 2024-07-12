@@ -109,7 +109,7 @@ if __name__ == '__main__':
         raise ValueError("frac_samples must be between 0 and 1")
     
     # Exemple of command line:
-    # python exec_peatnet.py --num_epochs 2 --nb_file2merge 2 --frac_samples 0.10
+    # python exec_peatnet.py --num_epochs 2 --nb_file2merge 2 --frac_samples 0.10 --gpu_ref cuda:0
 
     
 
@@ -119,7 +119,7 @@ if __name__ == '__main__':
         
         os.makedirs(carbon_log_dir)
 
-    device = setup_device()
+    device = setup_device(mydevice)
 
     
 
