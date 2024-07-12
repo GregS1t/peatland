@@ -46,7 +46,7 @@ model_dir = "../peatnet_models"
 carbon_estimation = True    # Estimate the carbon footprint
 carbon_log_file = "carbon_footprint.log"
 training_log_file = "peatnet_training"
-
+carbon_log_dir = "/home/gsainton/CARBON_LOG" if os.uname().nodename == 'ares6' else "/obs/gsainton/PEATLAND_DATA"
 data_dir = "/home/gsainton/CALER/PEATMAP/1_NN_training/training_data" if os.uname().nodename == 'ares6' else "/data/gsainton/PEATLAND_DATA"
 # --------------------------------------------------------------------------
 
@@ -63,9 +63,30 @@ if verbose:
 else:
     logger.setLevel(logging.INFO)
 
-def setup_device() -> torch.device:
-    device = torch.device('cuda:0' if torch.cuda.is_available() else 'cpu')
-    logger.info(f"Device: {device}")
+
+def setup_device(mydevice:str) -> torch.device:
+
+    if not torch.cuda.is_available():
+        logger.error("GPU is not available -> device = 'cpu'...")
+        device = torch.device('cpu')
+    else:
+        logger.info("GPU found...")
+        logger.info(f"Number of GPUs: {torch.cuda.device_count()}")
+        if torch.cuda.device_count() > 1:
+            # check the string format of mydevice
+            if mydevice in ['cuda:0', 'cuda:1', 'cuda:2', 'cuda:3']:
+                logger.info(f"Using GPU - {mydevice}")
+                device = torch.device(mydevice)
+            else:
+                logger.error(f"Invalid GPU reference: {mydevice}. Exiting...")
+                sys.exit(1)
+        else:
+            if mydevice != 'cuda:0':
+                logger.error(f"Invalid GPU reference: {mydevice}. Exiting...")
+                sys.exit(1)
+            else : 
+                logger.info("Using a single GPU : cuda:0")
+                device = torch.device('cuda:0')
     return device
 
 if __name__ == '__main__':
@@ -75,11 +96,14 @@ if __name__ == '__main__':
     parser.add_argument('--num_epochs', type=int, default=2, help='Number of epochs')
     parser.add_argument('--nb_file2merge', type=int, default=2, help='Number of files to merge')
     parser.add_argument('--frac_samples', type=float, default=0.10, help='Fraction of the data to extract')
+    parser.add_argument('--gpu_ref', type=str, default='cuda:0', help='GPU reference')
+
     args = parser.parse_args()
 
     num_epochs = args.num_epochs
     nb_file2merge = args.nb_file2merge
     frac_samples = args.frac_samples
+    mydevice = torch.device(args.gpu_ref)
 
     if frac_samples > 1 or frac_samples < 0:
         raise ValueError("frac_samples must be between 0 and 1")
@@ -87,7 +111,7 @@ if __name__ == '__main__':
     # Exemple of command line:
     # python exec_peatnet.py --num_epochs 2 --nb_file2merge 2 --frac_samples 0.10
 
-    carbon_log_dir = "/home/gsainton/CARBON_LOG" if os.uname().nodename == 'ares6' else "/obs/gsainton/PEATLAND_DATA"
+    
 
     if carbon_estimation:
         start = datetime.datetime.now()
