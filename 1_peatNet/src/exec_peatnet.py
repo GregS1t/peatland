@@ -71,8 +71,12 @@ def setup_device(mydevice:str) -> torch.device:
         device = torch.device('cpu')
     else:
         logger.info("GPU found...")
-        logger.info(f"Number of GPUs: {torch.cuda.device_count()}")
-        logger.info(f"Device name: {torch.cuda.get_device_name()}")
+        num_gpus = torch.cuda.device_count()
+        for i in range(num_gpus):
+            logger.info(f"Device {i} name: {torch.cuda.get_device_name(i)}")
+        
+        valid_devices = [f'cuda:{i}' for i in range(num_gpus)]
+        logger.info(f"Valid GPU references: {valid_devices}")
         
         if torch.cuda.device_count() > 1:
             # Check the string format of mydevice
