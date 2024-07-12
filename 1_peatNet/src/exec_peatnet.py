@@ -72,9 +72,11 @@ def setup_device(mydevice:str) -> torch.device:
     else:
         logger.info("GPU found...")
         logger.info(f"Number of GPUs: {torch.cuda.device_count()}")
+        logger.info(f"Device name: {torch.cuda.get_device_name()}")
+        
         if torch.cuda.device_count() > 1:
-            # check the string format of mydevice
-            if mydevice in ['cuda:0', 'cuda:1', 'cuda:2', 'cuda:3']:
+            # Check the string format of mydevice
+            if mydevice in [f'cuda:{i}' for i in range(torch.cuda.device_count())]:
                 logger.info(f"Using GPU - {mydevice}")
                 device = torch.device(mydevice)
             else:
@@ -84,10 +86,11 @@ def setup_device(mydevice:str) -> torch.device:
             if mydevice != 'cuda:0':
                 logger.error(f"Invalid GPU reference: {mydevice}. Exiting...")
                 sys.exit(1)
-            else : 
+            else:
                 logger.info("Using a single GPU : cuda:0")
                 device = torch.device('cuda:0')
     return device
+
 
 if __name__ == '__main__':
 
@@ -111,7 +114,6 @@ if __name__ == '__main__':
     # Exemple of command line:
     # python exec_peatnet.py --num_epochs 2 --nb_file2merge 2 --frac_samples 0.10 --gpu_ref cuda:0
 
-    
 
     if carbon_estimation:
         start = datetime.datetime.now()
@@ -131,6 +133,8 @@ if __name__ == '__main__':
     X, y = peatmat_data_proc.load_data()
     logging.info("Number of tiles to merge : {}".format(nb_file2merge))
     logging.info("Fraction of samples to extract : {}".format(frac_samples))
+
+
 
     X_fields = ['dist0005', 'dist0100', 'dist1000', 'hand0005',
         'hand0100', 'hand1000', 'slope',
