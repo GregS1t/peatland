@@ -45,6 +45,7 @@ class PeatNet(nn.Module):
 def train_model(model, train_dataloader, val_dataloader, criterion, optimizer, 
                 num_epochs=10, device='cpu', scheduler=None):
     
+    model.to(device)
     train_losses = []
     val_losses = []
     train_mae_scores = []
@@ -119,7 +120,6 @@ def train_model(model, train_dataloader, val_dataloader, criterion, optimizer,
         print(f'Epoch [{epoch+1}/{num_epochs}], Average Training Loss: {avg_train_loss:.4f}, Training MAE: {avg_train_mae:.4f}, Validation Loss: {avg_val_loss:.4f}, Validation MAE: {avg_val_mae:.4f}, Epoch Time: {epoch_duration:.2f} seconds')
     
     total_time = time.time() - start_time
-    #print(f'Total Training Time: {total_time:.2f} seconds')
 
     writer.close()
     return {
