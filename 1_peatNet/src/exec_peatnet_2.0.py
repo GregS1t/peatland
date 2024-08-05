@@ -233,8 +233,11 @@ if __name__ == '__main__':
                             device=device)
 
 
-    train_model(model, train_loader, validate_loader, criterion,
-                optimizer, num_epochs=10, device='cuda', scheduler=scheduler)
+    #train_model(model, train_loader, validate_loader, criterion,
+    #            optimizer, num_epochs=10, device='cuda', scheduler=scheduler)
+
+    train_model(model, train_loader, validate_loader, criterion, optimizer,
+                num_epochs=num_epochs, device=device, scheduler=scheduler)
 
     current_time = datetime.datetime.now().strftime("%Y%m%d-%H%M%S")
 
