@@ -33,7 +33,7 @@ learn_rate = 0.001          # Learning rate
 num_epochs = 5              # Number of epochs
 nb_file2merge = 5           # Number of files to merge
 frac_samples = 0.10         # Fraction of the data to extract
-normalize = False            # Normalize the data
+normalize = True            # Normalize the data
 verbose = True              # Verbose mode
 
 model_dir = "../peatnet_models"
@@ -100,7 +100,6 @@ def setup_device(mydevice: str) -> torch.device:
                 device = torch.device(mydevice)
         else:
             logger.error(f"Invalid GPU reference: {str(mydevice)} -> Valid references: {valid_devices}. Exiting...")
-
             sys.exit(1)
 
     return device
@@ -112,12 +111,14 @@ if __name__ == '__main__':
     parser.add_argument('--num_epochs', type=int, default=2, help='Number of epochs')
     parser.add_argument('--nb_file2merge', type=int, default=2, help='Number of files to merge')
     parser.add_argument('--frac_samples', type=float, default=0.10, help='Fraction of the data to extract')
+    parser.add_argument('--normalize', type=bool, default=True, help='Normalize the data')
     parser.add_argument('--gpu_ref', type=str, default='cuda:0', help='GPU reference')
     args = parser.parse_args()
 
     num_epochs = args.num_epochs
     nb_file2merge = args.nb_file2merge
     frac_samples = args.frac_samples
+    normalize = args.normalize
     mydevice = torch.device(args.gpu_ref)
 
     if frac_samples > 1 or frac_samples < 0:
@@ -147,10 +148,18 @@ if __name__ == '__main__':
     peatmat_data_proc.set_list_rdn_files(nb_file2merge)
     sub_sampled_data = peatmat_data_proc.get_list_rdn_files()
 
+
     X, y = peatmat_data_proc.load_data()
 
     logging.info("Number of tiles to merge : {}".format(nb_file2merge))
     logging.info("Fraction of samples to extract : {}".format(frac_samples))
+
+    if len(sub_sampled_data) == 0 or nb_file2merge == 0:
+        logging.error("No data to process. Check the input parameters or the data directory. Exiting...")
+        sys.exit(1)
+    logging.info("Files used for training :")
+    for f in sub_sampled_data:
+        logging.info("- {}".format(f))
 
     X_fields = ['dist0005', 'dist0100', 'dist1000', 'hand0005',
         'hand0100', 'hand1000', 'slope',
@@ -166,7 +175,7 @@ if __name__ == '__main__':
     y.columns = y_fields
 
     if normalize:
-        logger.info("Normalizing the data...")
+        logger.info("Normalizing the data requested (BoxCox + MinMaxScaler)...")
         fields_to_transform = [ 'dist0005', 'dist0100', 'dist1000', 'hand0005',
         'hand0005', 'hand0100', 'hand1000', 'slope', 'wtd',
         'landsat_1', 'landsat_2', 'landsat_3', 'landsat_4',
@@ -225,16 +234,13 @@ if __name__ == '__main__':
     criterion = nn.MSELoss()
     optimizer = torch.optim.Adam(model.parameters(), lr=learn_rate,
                                  weight_decay=1e-5)
+    logging.info(f"Optimizer: {optimizer}")
     scheduler = lr_scheduler.StepLR(optimizer, step_size=5, gamma=0.1)
 
     logger.info("Training the model...")
     total_time = train_model(model, train_loader, validate_loader,
                             criterion, optimizer, num_epochs=num_epochs,
                             device=device)
-
-
-    #train_model(model, train_loader, validate_loader, criterion,
-    #            optimizer, num_epochs=10, device='cuda', scheduler=scheduler)
 
     train_model(model, train_loader, validate_loader, criterion, optimizer,
                 num_epochs=num_epochs, device=device, scheduler=scheduler)
@@ -251,7 +257,6 @@ if __name__ == '__main__':
     #
     # --------------------------------------------------------------------------
 
-
     logger.info("Testing the model...")
     val_loss = 0.0
     with torch.no_grad():
@@ -263,7 +268,6 @@ if __name__ == '__main__':
             val_loss += loss.item()
     avg_val_loss = val_loss / len(validate_loader)
     logger.info(f"Validation loss: {avg_val_loss:.4f}")
-
 
     # --------------------------------------------------------------------------
     #
