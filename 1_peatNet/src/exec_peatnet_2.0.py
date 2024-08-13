@@ -13,22 +13,30 @@ import logging
 import argparse
 import subprocess
 
-from scipy.stats import boxcox
+from scipy.stats import boxcox # For the normalization
 
-from numba import jit
+from numba import jit          # For possible speedup
 
-import torch
+import torch                   # All the torch imports
 import torch.nn as nn
 import torch.utils.data as Data
 from torch.utils.data import TensorDataset
 import torch.optim.lr_scheduler as lr_scheduler
 
-from sklearn.model_selection import train_test_split
+from sklearn.model_selection import train_test_split # For the split of the data
 
+# Personnal imports
 from peatnet import *
 from utils import *
 from libCarbonFootprint import *
 
+
+# ------------------------------------------------------------------------------
+# Parameters
+#
+# Define the parameters of the model and the training
+# Some of them are overwritten by the command line arguments
+# ------------------------------------------------------------------------------
 learn_rate = 0.001          # Learning rate
 num_epochs = 5              # Number of epochs
 nb_file2merge = 5           # Number of files to merge
@@ -124,8 +132,8 @@ if __name__ == '__main__':
     if frac_samples > 1 or frac_samples < 0:
         raise ValueError("frac_samples must be between 0 and 1")
 
-    # Exemple of command line:
-    # python exec_peatnet_2.0.py --num_epochs 2 --nb_file2merge 2 --frac_samples 0.10
+    # Example of command line:
+    # python exec_peatnet_2.0.py --num_epochs 2 --nb_file2merge 2 --frac_samples 0.10 --normalize True
 
     carbon_log_dir = "/home/gsainton/CARBON_LOG" if os.uname().nodename == 'ares6' else "/obs/gsainton/PEATLAND_DATA"
 
@@ -148,8 +156,13 @@ if __name__ == '__main__':
     peatmat_data_proc.set_list_rdn_files(nb_file2merge)
     sub_sampled_data = peatmat_data_proc.get_list_rdn_files()
 
+    # Create output data file with the parameter used and the date
 
-    X, y = peatmat_data_proc.load_data()
+    filename = f"output_{datetime.datetime.now().strftime('%Y%m%d-%H%M%S')}_epoch{num_epochs}_frac{frac_samples}_f2merge{nb_file2merge}.npy"
+
+
+    outputdatafile = os.path.join(data_dir, "..", "output" + filename)
+    X, y = peatmat_data_proc.load_data(save=True, outputfile=outputdatafile)
 
     logging.info("Number of tiles to merge : {}".format(nb_file2merge))
     logging.info("Fraction of samples to extract : {}".format(frac_samples))
@@ -259,6 +272,7 @@ if __name__ == '__main__':
 
     logger.info("Testing the model...")
     val_loss = 0.0
+    val_mae = 0.0
     with torch.no_grad():
         for inputs, targets in tqdm(validate_loader, desc='Final Validation',
                                     leave=False):
@@ -266,8 +280,14 @@ if __name__ == '__main__':
             outputs = model(inputs)
             loss = criterion(outputs, targets)
             val_loss += loss.item()
+            val_mae += mean_absolute_error(outputs.cpu().detach().numpy(),
+                                           targets.cpu().detach().numpy())
+
     avg_val_loss = val_loss / len(validate_loader)
+    avg_val_mae = val_mae / len(validate_loader)
     logger.info(f"Validation loss: {avg_val_loss:.4f}")
+    logger.info(f"Validation MAE: {avg_val_mae:.4f}")
+
 
     # --------------------------------------------------------------------------
     #

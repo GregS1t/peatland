@@ -21,19 +21,19 @@ class PeatNetDataProc:
 
     def make_subset_data(self, datafile):
         """
-        Function to read a .mat (matlab format) file and return a fraction of the data 
-        as a Numpy arrays. 
+        Function to read a .mat (matlab format) file and return a fraction of the data
+        as a Numpy arrays.
         The fraction of data is selected randomly.
 
-        The matlab file is made of few sections : 
-        - input: contains the remote sensing and other data  
+        The matlab file is made of few sections :
+        - input: contains the remote sensing and other data
         - target: contains the fraction of peatland
         - latS: latitude of the point
         - lonS: longitude of the point
-        
+
         --------
-        INPUT: 
-            @datafile: str - full path of the matlab file to open and subsample 
+        INPUT:
+            @datafile: str - full path of the matlab file to open and subsample
 
         --------
         OUTPUT:
@@ -62,21 +62,21 @@ class PeatNetDataProc:
 
     def stack_data(self, list_files):
         """
-        Function to stack fraction of data from a list of files. 
+        Function to stack fraction of data from a list of files.
         The fraction is defined as an attribute of the class : self.frac_samples
-        
+
         Each files is read and subsampled in another function.
 
         --------
-        INPUT: 
-            @list_files: list of path to files 
-        
+        INPUT:
+            @list_files: list of path to files
+
         --------
         OUTPUT:
             @X: Numpy array - Array of Input data
             @y: Numpy array - Array of Ouput / labelled data
-        
-        
+
+
         """
         X, y = [], []
         for file in list_files:
@@ -102,13 +102,13 @@ class PeatNetDataProc:
         The number of files to merge is defined by the user
 
         --------
-        INPUT: 
+        INPUT:
             @nb_file2merge: int - Number of files to merge
 
         --------
         OUTPUT:
             None
-        
+
         """
         self.list_rdn_files = np.random.choice(self.list_all_files, nb_file2merge, replace=False)
         self.nb_file2merge = nb_file2merge
@@ -124,7 +124,7 @@ class PeatNetDataProc:
                 lon_data = np.array(f.get('lonS')).astype(np.float32).T
                 input_data = np.concatenate((input_data, lat_data, lon_data), axis=1)
         if outfmt == "torch":
-            return torch.from_numpy(input_data), torch.from_numpy(target_data)     
+            return torch.from_numpy(input_data), torch.from_numpy(target_data)
         elif outfmt == "pandas":
             return pd.DataFrame(input_data), pd.DataFrame(target_data)
         else:
@@ -135,7 +135,7 @@ class PeatNetDataProc:
         with h5py.File(file_path, 'w') as f:
             f.create_dataset('input', data=X.T)
             f.create_dataset('target', data=y.T)
-        
+
     def get_files(self, directory=None, pattern=r"^trainingData.*\.mat$"):
         if directory is None:
             directory = self.data_dir
@@ -150,16 +150,16 @@ class PeatNetDataProc:
             X[field], _ = boxcox(X[field])
         return X
 
-    def load_data(self, save=False, datafile=None):
+    def load_data(self, save=False, outdatafile=None):
         """
         Function to prepare the dataset from a list of files to stack.
-        It returns two Pandas Dataframe for the input and output data, 
+        It returns two Pandas Dataframe for the input and output data,
         aggregating the expected fraction of data randomly selected per file.
-        
+
         """
         if self.nb_file2merge == 0:
             self.nb_file2merge = len(self.list_all_files)
-         
+
         print(f"Number of files to merge: {self.nb_file2merge}")
         print(f"List of random files: {self.list_rdn_files}")
         if self.nb_file2merge == 0:
@@ -167,30 +167,30 @@ class PeatNetDataProc:
 
         if len(self.list_rdn_files) != 0:
             X, y = self.stack_data(self.list_rdn_files)
-        
+
             if save:
-                self.save_dataset_mat(datafile, X, y)
-                print(f"Data saved in {datafile}")
+                self.save_dataset_mat(outdatafile, X, y)
+                print(f"Data saved in {outdatafile}")
 
             return pd.DataFrame(X), pd.DataFrame(y)
 
     def normalize_data(self, X: pd.DataFrame, fields_to_transform: list) -> pd.DataFrame:
         """
         Custom function to normalize the input data
-        For now, the normlization process is just 
+        For now, the normlization process is just
         - BoxCox to "gaussianize" the distribution
         - MinMaxScaler to center the data between 0 and 1
 
         --------
-        INPUT: 
+        INPUT:
             @X: DataFrame - Input data to be normalized
-            @fields_to_transform - list - The normalization is applied only 
-                    on these fields.   
-        
+            @fields_to_transform - list - The normalization is applied only
+                    on these fields.
+
         --------
-        OUTPUT:             
+        OUTPUT:
             DataFrame with the normalized data
-        
+
         """
         X_boxcox = self.box_cox_transform(X.copy(), fields_to_transform)
         scaler = MinMaxScaler()
